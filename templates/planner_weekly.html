@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Weekly Planner - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>📅 Weekly Overview</h1>
+            <p>{{ week_start.strftime('%d %b') }} - {{ week_end.strftime('%d %b %Y') }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('planner.index') }}" class="btn btn-outline">Back to Daily</a>
+            <a href="{{ url_for('planner.add_task') }}" class="btn btn-primary">+ Add Task</a>
+        </div>
+    </div>
+
+    <div class="weekly-grid">
+        {% for day in days %}
+        <div class="day-column {% if day.is_today %}today{% endif %}">
+            <div class="day-header">
+                <span class="day-name">{{ day.name }}</span>
+                <span class="day-date">{{ day.date.strftime('%d/%m') }}</span>
+            </div>
+            <div class="day-tasks">
+                {% if day.tasks %}
+                {% for task in day.tasks %}
+                <div class="task-card priority-{{ task.priority }} {% if task.is_completed %}completed{% endif %}">
+                    <div class="task-card-header">
+                        <span class="task-card-title">{{ task.title }}</span>
+                        <!-- Inline actions -->
+                        <div class="task-actions-mini">
+                            <form action="{{ url_for('planner.delete_task', id=task.id) }}" method="POST"
+                                style="display:inline">
+                                <button type="submit" class="icon-btn-mini">×</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% if task.category %}
+                    <span class="task-card-cat">{{ task.category }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="day-empty"></div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .weekly-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.75rem;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
+
+    .day-column {
+        background: var(--glass-bg);
+        border-radius: var(--radius-md);
+        min-width: 140px;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--glass-border);
+    }
+
+    .day-column.today {
+        background: rgba(var(--primary-rgb), 0.05);
+        border-color: var(--primary-color);
+    }
+
+    .day-header {
+        padding: 0.75rem;
+        border-bottom: 1px solid var(--glass-border);
+        text-align: center;
+        background: rgba(0, 0, 0, 0.02);
+    }
+
+    .day-name {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .day-date {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .day-tasks {
+        padding: 0.5rem;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-height: 200px;
+    }
+
+    .task-card {
+        background: white;
+        padding: 0.5rem;
+        border-radius: var(--radius-sm);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        font-size: 0.85rem;
+        border-left: 3px solid transparent;
+    }
+
+    .task-card.priority-high {
+        border-left-color: var(--error-color);
+    }
+
+    .task-card.priority-medium {
+        border-left-color: var(--warning-color);
+    }
+
+    .task-card.priority-low {
+        border-left-color: var(--success-color);
+    }
+
+    .task-card.completed {
+        opacity: 0.6;
+        text-decoration: line-through;
+    }
+
+    .task-card-title {
+        font-weight: 500;
+        display: block;
+        margin-bottom: 0.25rem;
+        word-break: break-word;
+    }
+
+    .task-card-cat {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        background: var(--gray-100);
+        padding: 1px 4px;
+        border-radius: 4px;
+    }
+
+    .task-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .icon-btn-mini {
+        border: none;
+        background: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .icon-btn-mini:hover {
+        color: var(--error-color);
+    }
+</style>
+{% endblock %}

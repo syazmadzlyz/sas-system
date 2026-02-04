@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Tracker - Student Assistant System{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-content">
+            <h1>📅 Attendance Tracker</h1>
+            <p>Calculate your attendance percentage and check if you're at risk of examination bar</p>
+        </div>
+    </header>
+
+    <div class="content-grid">
+        <!-- Calculator Section -->
+        <div class="card card-form">
+            <div class="card-header">
+                <h2>Calculate Attendance</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="attendanceForm" class="form">
+                    <div class="form-group">
+                        <label for="subject_name">Subject Name</label>
+                        <input type="text" id="subject_name" name="subject_name" placeholder="e.g., Data Structures"
+                            required list="subjectList">
+                        <datalist id="subjectList">
+                            {% for subject in subjects %}
+                            <option value="{{ subject.name }}">
+                                {% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="total_weeks">Total Weeks</label>
+                            <input type="number" id="total_weeks" name="total_weeks" value="14" min="1" max="20"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="classes_per_week">Classes/Week</label>
+                            <select id="classes_per_week" name="classes_per_week" required>
+                                <option value="1">1 class</option>
+                                <option value="2">2 classes</option>
+                                <option value="3">3 classes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="attended_classes">Classes Attended</label>
+                        <input type="number" id="attended_classes" name="attended_classes" value="0" min="0" required>
+                        <small class="form-hint">Total classes: <span id="totalClassesPreview">14</span></small>
+                    </div>
+
+                    <!-- Live Preview -->
+                    <div class="preview-box" id="previewBox">
+                        <div class="preview-percentage">
+                            <span id="previewPercentage">0</span>%
+                        </div>
+                        <div class="preview-bar">
+                            <div class="preview-bar-fill" id="previewBarFill" style="width: 0%"></div>
+                            <div class="preview-bar-threshold"></div>
+                        </div>
+                        <p class="preview-status" id="previewStatus">Enter your attendance data</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Calculate & Save
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        {% if result %}
+        <div class="card card-result">
+            <div class="card-header">
+                <h2>📊 Result for {{ result.subject }}</h2>
+            </div>
+            <div class="card-body">
+                <div class="result-display">
+                    <div class="result-percentage {% if result.is_barred %}danger{% else %}success{% endif %}">
+                        <span class="percentage-value">{{ "%.1f"|format(result.percentage) }}%</span>
+                        <span class="percentage-label">Attendance</span>
+                    </div>
+
+                    <div class="result-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Total Classes</span>
+                            <span class="detail-value">{{ result.total_classes }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Attended</span>
+                            <span class="detail-value">{{ result.attended }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Remaining</span>
+                            <span class="detail-value">{{ result.remaining_classes }}</span>
+                        </div>
+                    </div>
+
+                    <div
+                        class="result-status {% if result.is_barred %}status-danger{% else %}status-success{% endif %}">
+                        {% if result.is_barred %}
+                        <span class="status-icon">🚨</span>
+                        <div class="status-content">
+                            <strong>Examination Bar Risk!</strong>
+                            <p>You need to attend {{ result.classes_needed }} more classes to reach 80%</p>
+                        </div>
+                        {% else %}
+                        <span class="status-icon">✅</span>
+                        <div class="status-content">
+                            <strong>Safe!</strong>
+                            <p>Your attendance is above the 80% requirement</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- History Section -->
+        <div class="card card-history">
+            <div class="card-header">
+                <h2>📋 Attendance History</h2>
+            </div>
+            <div class="card-body">
+                {% if attendances %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Attended/Total</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for attendance in attendances %}
+                            <tr>
+                                <td class="td-subject">{{ attendance.subject_name }}</td>
+                                <td>{{ attendance.attended_classes }}/{{ attendance.total_classes }}</td>
+                                <td>
+                                    <div class="mini-progress">
+                                        <div class="mini-bar"
+                                            style="width: {{ attendance.attendance_percentage }}%; background: {% if attendance.attendance_percentage >= 80 %}var(--success){% else %}var(--danger){% endif %}">
+                                        </div>
+                                    </div>
+                                    <span>{{ "%.1f"|format(attendance.attendance_percentage) }}%</span>
+                                </td>
+                                <td>
+                                    {% if attendance.is_barred %}
+                                    <span class="badge badge-danger">At Risk</span>
+                                    {% else %}
+                                    <span class="badge badge-success">Safe</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('attendance.delete', id=attendance.id) }}"
+                                        style="display: inline">
+                                        <button type="submit" class="btn btn-sm btn-ghost btn-danger" title="Delete">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">📅</span>
+                    <p>No attendance records yet</p>
+                    <p class="text-muted">Use the calculator above to add your first record</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="card card-info">
+        <div class="card-header">
+            <h2>ℹ️ About Examination Bar</h2>
+        </div>
+        <div class="card-body">
+            <div class="info-content">
+                <div class="info-item">
+                    <span class="info-icon">📌</span>
+                    <div>
+                        <strong>80% Rule</strong>
+                        <p>You must attend at least 80% of classes to be eligible for examinations</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">⚠️</span>
+                    <div>
+                        <strong>Consequences</strong>
+                        <p>Falling below 80% may result in being barred from taking the final exam</p>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-icon">💡</span>
+                    <div>
+                        <strong>Tip</strong>
+                        <p>Track your attendance regularly and never miss more than 20% of total classes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Live attendance preview
+    const weeksInput = document.getElementById('total_weeks');
+    const classesInput = document.getElementById('classes_per_week');
+    const attendedInput = document.getElementById('attended_classes');
+    const totalPreview = document.getElementById('totalClassesPreview');
+    const percentagePreview = document.getElementById('previewPercentage');
+    const barFill = document.getElementById('previewBarFill');
+    const statusPreview = document.getElementById('previewStatus');
+    const previewBox = document.getElementById('previewBox');
+
+    function updatePreview() {
+        const weeks = parseInt(weeksInput.value) || 14;
+        const classesPerWeek = parseInt(classesInput.value) || 1;
+        const attended = parseInt(attendedInput.value) || 0;
+
+        const total = weeks * classesPerWeek;
+        totalPreview.textContent = total;
+
+        // Update max for attended input
+        attendedInput.max = total;
+
+        if (total > 0) {
+            const percentage = (attended / total) * 100;
+            percentagePreview.textContent = percentage.toFixed(1);
+            barFill.style.width = Math.min(percentage, 100) + '%';
+
+            if (percentage >= 80) {
+                barFill.style.background = 'var(--success)';
+                previewBox.className = 'preview-box safe';
+                statusPreview.textContent = '✅ Safe - Above 80% threshold';
+            } else {
+                barFill.style.background = 'var(--danger)';
+                previewBox.className = 'preview-box danger';
+                const needed = Math.ceil(total * 0.8) - attended;
+                statusPreview.textContent = `⚠️ At Risk - Need ${needed} more classes`;
+            }
+        }
+    }
+
+    weeksInput.addEventListener('input', updatePreview);
+    classesInput.addEventListener('change', updatePreview);
+    attendedInput.addEventListener('input', updatePreview);
+
+    // Initial preview
+    updatePreview();
+</script>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - I-SAS{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <img src="{{ url_for('static', filename='images/isas-logo.png') }}" alt="I-SAS" class="auth-logo-img">
+            <h1>Create Account</h1>
+            <p>Join the I-SAS community</p>
+        </div>
+
+        <form method="POST" class="auth-form" id="signupForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" value="{{ username if username else '' }}"
+                    placeholder="Choose a username" required minlength="3" maxlength="80" autocomplete="username">
+                <small class="form-hint">At least 3 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" value="{{ email if email else '' }}"
+                    placeholder="you@example.com" required autocomplete="email">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <div class="password-input">
+                    <input type="password" id="password" name="password" placeholder="Create a password" required
+                        minlength="6" autocomplete="new-password">
+                    <button type="button" class="toggle-password" onclick="togglePassword('password')">
+                        👁️
+                    </button>
+                </div>
+                <small class="form-hint">At least 6 characters</small>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <div class="password-input">
+                    <input type="password" id="confirm_password" name="confirm_password"
+                        placeholder="Confirm your password" required minlength="6" autocomplete="new-password">
+                    <button type="button" class="toggle-password" onclick="togglePassword('confirm_password')">
+                        👁️
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                Create Account
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a></p>
+        </div>
+    </div>
+
+    <div class="auth-illustration">
+        <div class="illustration-content">
+            <h2>I-SAS</h2>
+            <p>IIUM Student Assistant System</p>
+            <div class="stats-preview">
+                <div class="stat-item">
+                    <span class="stat-number">4.0</span>
+                    <span class="stat-label">Target CGPA</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">100%</span>
+                    <span class="stat-label">Attendance Goal</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">A</span>
+                    <span class="stat-label">Dream Grade</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.getElementById('signupForm').addEventListener('submit', function (e) {
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm_password').value;
+
+        if (password !== confirm) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

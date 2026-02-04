@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}AI Study Assistant - Student Assistant System{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header ai-header">
+        <div class="header-content">
+            <h1>🤖 AI Study Assistant</h1>
+            <p>Get personalized study recommendations powered by machine learning</p>
+        </div>
+        <div class="ai-badge">
+            <span class="pulse"></span>
+            ML Powered
+        </div>
+    </header>
+
+    <div class="content-grid assistant-grid">
+        <!-- Risk Assessment Card -->
+        <div
+            class="card card-risk {% if analysis.risk_level == 'High' %}card-danger{% elif analysis.risk_level == 'Medium' %}card-warning{% else %}card-success{% endif %}">
+            <div class="card-header">
+                <h2>📊 Your Risk Assessment</h2>
+            </div>
+            <div class="card-body">
+                <div class="risk-display">
+                    <div class="risk-level">
+                        <span class="risk-icon">
+                            {% if analysis.risk_level == 'High' %}🚨
+                            {% elif analysis.risk_level == 'Medium' %}⚠️
+                            {% else %}✅{% endif %}
+                        </span>
+                        <span class="risk-value">{{ analysis.risk_level }}</span>
+                        <span class="risk-label">Risk Level</span>
+                    </div>
+
+                    <div class="risk-stats">
+                        <div class="risk-stat">
+                            <span class="stat-label">Attendance</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: {{ analysis.statistics.avg_attendance }}%"></div>
+                            </div>
+                            <span class="stat-value">{{ "%.1f"|format(analysis.statistics.avg_attendance) }}%</span>
+                        </div>
+                        <div class="risk-stat">
+                            <span class="stat-label">Carry Marks</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: {{ analysis.statistics.avg_carry_mark }}%"></div>
+                            </div>
+                            <span class="stat-value">{{ "%.1f"|format(analysis.statistics.avg_carry_mark) }}%</span>
+                        </div>
+                        <div class="risk-stat">
+                            <span class="stat-label">CGPA</span>
+                            <div class="stat-bar">
+                                <div class="stat-fill" style="width: {{ (cgpa / 4) * 100 }}%"></div>
+                            </div>
+                            <span class="stat-value">{{ "%.2f"|format(cgpa) }}/4.0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="study-hours">
+                    <span class="hours-icon">⏰</span>
+                    <div class="hours-content">
+                        <strong>Recommended Study Hours</strong>
+                        <p>{{ analysis.recommendations.study_hours }} hours per day</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations -->
+        <div class="card card-recommendations">
+            <div class="card-header">
+                <h2>💡 Personalized Recommendations</h2>
+                <span class="priority-badge priority-{{ analysis.recommendations.priority|lower }}">
+                    {{ analysis.recommendations.priority }} Priority
+                </span>
+            </div>
+            <div class="card-body">
+                <ul class="advice-list">
+                    {% for advice in analysis.recommendations.advice %}
+                    <li class="advice-item">{{ advice }}</li>
+                    {% endfor %}
+                </ul>
+
+                {% if analysis.weak_subjects %}
+                <div class="weak-subjects">
+                    <h3>⚠️ Focus Areas</h3>
+                    <div class="subject-tags">
+                        {% for subject in analysis.weak_subjects %}
+                        <span class="subject-tag">{{ subject }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Ask -->
+        <div class="card card-ask">
+            <div class="card-header">
+                <h2>❓ Ask the Assistant</h2>
+            </div>
+            <div class="card-body">
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message assistant">
+                            <span class="message-icon">🤖</span>
+                            <div class="message-content">
+                                Hi! I'm your AI study assistant. Ask me anything about attendance, CGPA, grades,
+                                studying, or exams!
+                            </div>
+                        </div>
+                    </div>
+                    <form id="askForm" class="chat-input">
+                        <input type="text" id="questionInput" placeholder="Ask a question..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary">Send</button>
+                    </form>
+                </div>
+
+                <div class="quick-questions">
+                    <p>Quick questions:</p>
+                    <div class="question-chips">
+                        <button class="chip" data-question="What is the attendance requirement?">Attendance
+                            rule</button>
+                        <button class="chip" data-question="How to pass a subject?">Passing marks</button>
+                        <button class="chip" data-question="How is CGPA calculated?">CGPA formula</button>
+                        <button class="chip" data-question="How to study effectively?">Study tips</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- What-If Predictor -->
+        <div class="card card-predictor">
+            <div class="card-header">
+                <h2>🔮 What-If Predictor</h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">See how changes affect your risk level</p>
+
+                <form id="predictorForm" class="predictor-form">
+                    <div class="slider-group">
+                        <label>Attendance: <span id="attendanceValue">80</span>%</label>
+                        <input type="range" id="predictAttendance" min="0" max="100" value="80">
+                    </div>
+                    <div class="slider-group">
+                        <label>Carry Mark: <span id="carryValue">60</span>%</label>
+                        <input type="range" id="predictCarry" min="0" max="100" value="60">
+                    </div>
+                    <div class="slider-group">
+                        <label>Past GPA: <span id="gpaValue">2.5</span></label>
+                        <input type="range" id="predictGPA" min="0" max="4" value="2.5" step="0.1">
+                    </div>
+
+                    <div class="predictor-result" id="predictorResult">
+                        <div class="result-risk">
+                            <span class="result-label">Predicted Risk:</span>
+                            <span class="result-value" id="predictedRisk">Medium</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Study Resources -->
+        <div class="card card-resources">
+            <div class="card-header">
+                <h2>📚 Recommended Resources</h2>
+            </div>
+            <div class="card-body">
+                <div class="resource-grid">
+                    {% for resource in analysis.recommendations.resources %}
+                    <a href="{{ resource.url }}" target="_blank" class="resource-card">
+                        <span class="resource-icon">🔗</span>
+                        <div class="resource-info">
+                            <strong>{{ resource.name }}</strong>
+                            <p>{{ resource.desc }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+
+                    <a href="https://notebooklm.google.com/" target="_blank" class="resource-card featured">
+                        <span class="resource-icon">🤖</span>
+                        <div class="resource-info">
+                            <strong>NotebookLM</strong>
+                            <p>Google's AI-powered study assistant</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Importance -->
+        <div class="card card-explain">
+            <div class="card-header">
+                <h2>🔍 How It Works</h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Our ML model uses these factors to predict your risk level:</p>
+
+                <div class="importance-chart">
+                    {% for feature, importance in feature_importance.items() %}
+                    <div class="importance-item">
+                        <span class="feature-name">{{ feature|replace('_', ' ')|title }}</span>
+                        <div class="importance-bar">
+                            <div class="importance-fill" style="width: {{ importance * 100 }}%"></div>
+                        </div>
+                        <span class="importance-value">{{ "%.0f"|format(importance * 100) }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="model-info">
+                    <p>🤖 Model: Random Forest Classifier</p>
+                    <p>📊 Trained on: Student performance data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Chat functionality
+    const chatMessages = document.getElementById('chatMessages');
+    const askForm = document.getElementById('askForm');
+    const questionInput = document.getElementById('questionInput');
+
+    askForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const question = questionInput.value.trim();
+        if (!question) return;
+
+        // Add user message
+        addMessage(question, 'user');
+        questionInput.value = '';
+
+        try {
+            const response = await fetch('/assistant/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: question })
+            });
+
+            const data = await response.json();
+            addMessage(data.answer, 'assistant');
+        } catch (error) {
+            addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+        }
+    });
+
+    function addMessage(text, type) {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        div.innerHTML = `
+        <span class="message-icon">${type === 'user' ? '👤' : '🤖'}</span>
+        <div class="message-content">${text}</div>
+    `;
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Quick question chips
+    document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', function () {
+            questionInput.value = this.dataset.question;
+            askForm.dispatchEvent(new Event('submit'));
+        });
+    });
+
+    // What-If Predictor
+    const predictAttendance = document.getElementById('predictAttendance');
+    const predictCarry = document.getElementById('predictCarry');
+    const predictGPA = document.getElementById('predictGPA');
+    const attendanceValue = document.getElementById('attendanceValue');
+    const carryValue = document.getElementById('carryValue');
+    const gpaValue = document.getElementById('gpaValue');
+    const predictedRisk = document.getElementById('predictedRisk');
+    const predictorResult = document.getElementById('predictorResult');
+
+    async function updatePrediction() {
+        const attendance = parseFloat(predictAttendance.value);
+        const carry = parseFloat(predictCarry.value);
+        const gpa = parseFloat(predictGPA.value);
+
+        attendanceValue.textContent = attendance;
+        carryValue.textContent = carry;
+        gpaValue.textContent = gpa.toFixed(1);
+
+        try {
+            const response = await fetch('/assistant/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    attendance: attendance,
+                    carry_mark: carry,
+                    past_gpa: gpa
+                })
+            });
+
+            const data = await response.json();
+            predictedRisk.textContent = data.risk_level;
+            predictedRisk.className = `result-value risk-${data.risk_level.toLowerCase()}`;
+            predictorResult.className = `predictor-result risk-${data.risk_level.toLowerCase()}`;
+        } catch (error) {
+            console.error('Prediction error:', error);
+        }
+    }
+
+    predictAttendance.addEventListener('input', updatePrediction);
+    predictCarry.addEventListener('input', updatePrediction);
+    predictGPA.addEventListener('input', updatePrediction);
+
+    // Initial prediction
+    updatePrediction();
+</script>
+{% endblock %}

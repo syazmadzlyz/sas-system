@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="description" content="I-SAS - IIUM Student Assistant System">
+    <title>{% block title %}I-SAS{% endblock %}</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/isas-logo.png') }}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Navigation -->
+    {% if current_user.is_authenticated %}
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('dashboard.index') }}" class="nav-brand">
+                <img src="{{ url_for('static', filename='images/isas-logo.png') }}" alt="I-SAS" class="brand-logo">
+                <span class="brand-text">I-SAS</span>
+            </a>
+
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="{{ url_for('dashboard.index') }}"
+                        class="nav-link {% if request.endpoint and request.endpoint.startswith('dashboard') %}active{% endif %}">
+                        <span class="nav-icon">📊</span> Dashboard
+                    </a></li>
+                <li><a href="{{ url_for('timetable.index') }}"
+                        class="nav-link {% if request.endpoint and request.endpoint.startswith('timetable') %}active{% endif %}">
+                        <span class="nav-icon">📅</span> Timetable
+                    </a></li>
+                <li><a href="{{ url_for('assignments.index') }}"
+                        class="nav-link {% if request.endpoint and request.endpoint.startswith('assignments') %}active{% endif %}">
+                        <span class="nav-icon">📝</span> Assignments
+                    </a></li>
+                <li><a href="{{ url_for('cgpa.index') }}"
+                        class="nav-link {% if request.endpoint and request.endpoint.startswith('cgpa') %}active{% endif %}">
+                        <span class="nav-icon">📈</span> CGPA
+                    </a></li>
+                <li><a href="{{ url_for('attendance.index') }}"
+                        class="nav-link {% if request.endpoint and request.endpoint.startswith('attendance') %}active{% endif %}">
+                        <span class="nav-icon">✅</span> Attendance
+                    </a></li>
+
+                <!-- More dropdown -->
+                <li class="nav-dropdown">
+                    <a href="#" class="nav-link nav-dropdown-toggle">
+                        <span class="nav-icon">⚡</span> More <span class="dropdown-arrow">▼</span>
+                    </a>
+                    <ul class="nav-dropdown-menu">
+                        <li><a href="{{ url_for('exam.index') }}">📝 Exam Calculator</a></li>
+                        <li><a href="{{ url_for('exam_schedule.index') }}">📆 Exam Schedule</a></li>
+                        <li><a href="{{ url_for('planner.index') }}">📋 Study Planner</a></li>
+                        <li><a href="{{ url_for('finance.index') }}">💰 Finance</a></li>
+                        <li><a href="{{ url_for('assistant.index') }}">🤖 AI Assistant</a></li>
+                    </ul>
+                </li>
+
+                <!-- Mobile-only user links -->
+                <li class="mobile-only">
+                    <a href="{{ url_for('profile.view_profile') }}" class="nav-link">
+                        <span class="nav-icon">👤</span> My Profile
+                    </a>
+                </li>
+                {% if current_user.is_admin %}
+                <li class="mobile-only">
+                    <a href="{{ url_for('admin.index') }}" class="nav-link">
+                        <span class="nav-icon">👮‍♂️</span> Admin Dashboard
+                    </a>
+                </li>
+                {% endif %}
+                <li class="mobile-only">
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link nav-link-logout">
+                        <span class="nav-icon">🚪</span> Logout
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Right Side: Toggle + User -->
+            <div class="nav-right">
+                <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <!-- Desktop user menu -->
+                <div class="nav-user">
+                    <div class="user-dropdown">
+                        <button class="user-avatar-btn" id="userMenuBtn">
+                            <span class="user-avatar">
+                                {{ current_user.username[:1].upper() }}
+                            </span>
+                            <span class="user-name">{{ current_user.username }}</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <ul class="user-dropdown-menu" id="userMenu">
+                            <li><a href="{{ url_for('profile.view_profile') }}">👤 My Profile</a></li>
+                            <li><a href="{{ url_for('profile.edit') }}">✏️ Edit Profile</a></li>
+                            {% if current_user.is_admin %}
+                            <li class="divider"></li>
+                            <li><a href="{{ url_for('admin.index') }}">👮‍♂️ Admin Dashboard</a></li>
+                            {% endif %}
+                            <li class="divider"></li>
+                            <li><a href="{{ url_for('auth.logout') }}" class="logout-link">🚪 Logout</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Global Announcement Banner -->
+        {% if active_announcement %}
+        <div class="alert alert-{{ active_announcement.type }} mb-4 text-center"
+            style="border-radius: var(--radius-md);">
+            <strong>📢 Announcement:</strong> {{ active_announcement.message }}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 I-SAS - IIUM Student Assistant System. <img
+                    src="{{ url_for('static', filename='images/isas-logo.png') }}" alt="Logo"
+                    style="height: 20px; vertical-align: middle; margin-left: 5px;"></p>
+            <p class="footer-links">
+                <a href="https://imaluum.iium.edu.my" target="_blank">i-Ma'luum</a>
+                <span>•</span>
+                <a href="https://lib.iium.edu.my" target="_blank">IIUM Library</a>
+                <span>•</span>
+                <a href="https://www.iium.edu.my" target="_blank">IIUM Portal</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scroll Restoration Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Restore scroll position only if URL matches and we have a flash message (action occurred)
+            var savedPos = sessionStorage.getItem("scrollPos");
+            var savedUrl = sessionStorage.getItem("scrollUrl");
+            var hasFlash = document.querySelector(".flash-container");
+
+            if (savedPos && savedUrl === window.location.href && hasFlash) {
+                window.scrollTo(0, parseInt(savedPos));
+            }
+            // Always clear storage to prevent unexpected jumps on manual refresh
+            sessionStorage.removeItem("scrollPos");
+            sessionStorage.removeItem("scrollUrl");
+        });
+
+        window.addEventListener('beforeunload', function () {
+            sessionStorage.setItem("scrollPos", window.scrollY);
+            sessionStorage.setItem("scrollUrl", window.location.href);
+        });
+    </script>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

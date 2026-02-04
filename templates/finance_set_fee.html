@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Set Semester Fee - I-SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>📋 Set Semester Fee</h1>
+            <p>Enter your total semester fee amount</p>
+        </div>
+        <a href="{{ url_for('finance.index') }}" class="btn btn-outline">← Back</a>
+    </div>
+
+    <div class="card glass-card" style="max-width: 500px; margin: 0 auto;">
+        <div class="card-body">
+            <form method="POST" class="form">
+                <div class="form-group">
+                    <label for="semester">Semester</label>
+                    <select id="semester" name="semester" required class="form-control">
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 2">Semester 2</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 4">Semester 4</option>
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                        <option value="Semester 7">Semester 7</option>
+                        <option value="Semester 8">Semester 8</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Total Fee Amount (RM)</label>
+                    <input type="number" id="amount" name="amount" placeholder="e.g., 5000" min="0" step="0.01" required
+                        class="form-control">
+                    <small class="text-muted">Enter the total amount you need to pay for this semester</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Set Semester Fee
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+
+{% block title %}CGPA Calculator - I-SAS{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-content">
+            <h1>📈 CGPA Calculator</h1>
+            <p>Calculate your GPA and CGPA using the IIUM grading scheme</p>
+        </div>
+        <div class="header-stats">
+            <div class="header-stat">
+                <span class="stat-value">{{ "%.2f"|format(current_gpa) }}</span>
+                <span class="stat-label">Current GPA</span>
+            </div>
+            <div class="header-stat highlight">
+                <span class="stat-value">{{ "%.2f"|format(current_cgpa) }}</span>
+                <span class="stat-label">CGPA</span>
+            </div>
+            <div class="header-stat">
+                <span class="stat-value">{{ total_credits }}</span>
+                <span class="stat-label">Total Credits</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="content-grid cgpa-grid">
+        <!-- Add Subject Form -->
+        <div class="card card-form">
+            <div class="card-header">
+                <h2>➕ Add Subject</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="cgpaForm" class="form">
+                    <input type="hidden" name="action" value="add">
+
+                    <div class="form-group">
+                        <label for="subject_name">Subject Name</label>
+                        <input type="text" id="subject_name" name="subject_name" placeholder="e.g., Data Structures"
+                            required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="subject_code">Code (Optional)</label>
+                            <input type="text" id="subject_code" name="subject_code" placeholder="e.g., CSC 2103">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="credit_hours">Credit Hours</label>
+                            <select id="credit_hours" name="credit_hours" required>
+                                <option value="1">1 CH</option>
+                                <option value="2">2 CH</option>
+                                <option value="3" selected>3 CH</option>
+                                <option value="4">4 CH</option>
+                                <option value="5">5 CH</option>
+                                <option value="6">6 CH</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="semester">Semester</label>
+                        <select id="semester" name="semester" required>
+                            <option value="Semester 1">Semester 1</option>
+                            <option value="Semester 2">Semester 2</option>
+                            <option value="Semester 3">Semester 3</option>
+                            <option value="Semester 4">Semester 4</option>
+                            <option value="Semester 5">Semester 5</option>
+                            <option value="Semester 6">Semester 6</option>
+                            <option value="Semester 7">Semester 7</option>
+                            <option value="Semester 8">Semester 8</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Input Type</label>
+                        <div class="toggle-group">
+                            <label class="toggle-option">
+                                <input type="radio" name="input_type" value="marks" checked>
+                                <span>Marks</span>
+                            </label>
+                            <label class="toggle-option">
+                                <input type="radio" name="input_type" value="grade">
+                                <span>Grade</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="marksGroup">
+                        <label for="marks">Marks (0-100)</label>
+                        <input type="number" id="marks" name="marks" placeholder="Enter percentage marks" min="0"
+                            max="100" step="0.1">
+                        <div class="grade-preview" id="gradePreview">
+                            Enter marks to see grade
+                        </div>
+                    </div>
+
+                    <div class="form-group hidden" id="gradeGroup">
+                        <label for="grade">Select Grade</label>
+                        <select id="grade" name="grade">
+                            <option value="">Select Grade</option>
+                            <option value="A">A (4.00)</option>
+                            <option value="A-">A- (3.67)</option>
+                            <option value="B+">B+ (3.33)</option>
+                            <option value="B">B (3.00)</option>
+                            <option value="B-">B- (2.67)</option>
+                            <option value="C+">C+ (2.33)</option>
+                            <option value="C">C (2.00)</option>
+                            <option value="D">D (1.67)</option>
+                            <option value="D-">D- (1.33)</option>
+                            <option value="E">E (1.00)</option>
+                            <option value="F">F (0.00)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Add Subject
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Semesters Accordion -->
+        <div class="card card-wide">
+            <div class="card-header">
+                <h2>📚 Your Subjects by Semester</h2>
+            </div>
+            <div class="card-body">
+                {% if semesters %}
+                <div class="semester-accordion">
+                    {% for sem in semesters %}
+                    <div class="semester-section" data-expanded="true">
+                        <div class="semester-header" onclick="toggleSemester(this)">
+                            <div class="semester-info">
+                                <span class="semester-name">{{ sem.name }}</span>
+                                <span class="semester-badge">{{ sem.count }} subjects</span>
+                            </div>
+                            <div class="semester-stats">
+                                <span class="sem-gpa">GPA: <strong>{{ "%.2f"|format(sem.gpa) }}</strong></span>
+                                <span class="sem-credits">{{ sem.credits }} CH</span>
+                                <span class="toggle-icon">▼</span>
+                            </div>
+                        </div>
+                        <div class="semester-content">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Code</th>
+                                            <th>Credit</th>
+                                            <th>Marks</th>
+                                            <th>Grade</th>
+                                            <th>Points</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for subject in sem.subjects %}
+                                        <tr>
+                                            <td class="td-subject">{{ subject.name }}</td>
+                                            <td>{{ subject.code or '-' }}</td>
+                                            <td>{{ subject.credit_hours }}</td>
+                                            <td>{{ "%.1f"|format(subject.marks) if subject.marks else '-' }}</td>
+                                            <td>
+                                                <span
+                                                    class="grade-badge grade-{{ subject.grade|replace('-', 'minus')|replace('+', 'plus') if subject.grade else 'pending' }}">
+                                                    {{ subject.grade or '--' }}
+                                                </span>
+                                            </td>
+                                            <td>{{ "%.2f"|format(subject.grade_point) if subject.grade_point else '-' }}
+                                            </td>
+                                            <td>
+                                                <form method="POST"
+                                                    action="{{ url_for('cgpa.delete_subject', id=subject.id) }}"
+                                                    style="display: inline">
+                                                    <button type="submit"
+                                                        class="btn btn-sm btn-ghost btn-danger">🗑️</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="semester-actions">
+                                <form method="POST" style="display: inline">
+                                    <input type="hidden" name="action" value="save_semester">
+                                    <input type="hidden" name="semester_name" value="{{ sem.name }}">
+                                    <button type="submit" class="btn btn-sm btn-outline">Save {{ sem.name }} to
+                                        History</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">📚</span>
+                    <p>No subjects added yet</p>
+                    <p class="text-muted">Add your first subject using the form</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- CGPA History -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📊 CGPA History</h2>
+            </div>
+            <div class="card-body">
+                {% if history %}
+                <div class="history-list">
+                    {% for record in history %}
+                    <div class="history-item">
+                        <div class="history-semester">{{ record.semester }}</div>
+                        <div class="history-stats">
+                            <span class="history-gpa">GPA: {{ "%.2f"|format(record.gpa) }}</span>
+                            <span class="history-cgpa">CGPA: {{ "%.2f"|format(record.cgpa) }}</span>
+                            <span class="history-credits">{{ record.total_credits }} CH</span>
+                        </div>
+                        <form method="POST" action="{{ url_for('cgpa.delete_history', id=record.id) }}"
+                            style="display: inline">
+                            <button type="submit" class="btn btn-sm btn-ghost">🗑️</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state small">
+                    <p>No history saved yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grading Scheme Reference -->
+        <div class="card">
+            <div class="card-header">
+                <h2>📋 IIUM Grading Scheme</h2>
+            </div>
+            <div class="card-body">
+                <div class="grading-table">
+                    {% for grade in grading %}
+                    <div class="grading-row">
+                        <span class="grading-range">{{ grade.range }}</span>
+                        <span class="grade-badge grade-{{ grade.grade|replace('-', 'minus')|replace('+', 'plus') }}">{{
+                            grade.grade }}</span>
+                        <span class="grading-point">{{ "%.2f"|format(grade.point) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Toggle semester accordion
+    function toggleSemester(header) {
+        const section = header.parentElement;
+        const content = section.querySelector('.semester-content');
+        const icon = header.querySelector('.toggle-icon');
+
+        if (section.dataset.expanded === 'true') {
+            section.dataset.expanded = 'false';
+            content.style.maxHeight = '0';
+            icon.textContent = '▶';
+        } else {
+            section.dataset.expanded = 'true';
+            content.style.maxHeight = content.scrollHeight + 'px';
+            icon.textContent = '▼';
+        }
+    }
+
+    // Initialize all accordions as expanded
+    document.querySelectorAll('.semester-content').forEach(content => {
+        content.style.maxHeight = content.scrollHeight + 'px';
+    });
+
+    // Toggle between marks and grade input
+    const inputTypeRadios = document.querySelectorAll('input[name="input_type"]');
+    const marksGroup = document.getElementById('marksGroup');
+    const gradeGroup = document.getElementById('gradeGroup');
+    const marksInput = document.getElementById('marks');
+    const gradePreview = document.getElementById('gradePreview');
+
+    inputTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.value === 'marks') {
+                marksGroup.classList.remove('hidden');
+                gradeGroup.classList.add('hidden');
+                marksInput.required = true;
+                document.getElementById('grade').required = false;
+            } else {
+                marksGroup.classList.add('hidden');
+                gradeGroup.classList.remove('hidden');
+                marksInput.required = false;
+                document.getElementById('grade').required = true;
+            }
+        });
+    });
+
+    // Grade preview based on marks
+    const gradingScheme = [
+        { min: 80, max: 100, grade: 'A', point: 4.00 },
+        { min: 75, max: 79, grade: 'A-', point: 3.67 },
+        { min: 70, max: 74, grade: 'B+', point: 3.33 },
+        { min: 65, max: 69, grade: 'B', point: 3.00 },
+        { min: 60, max: 64, grade: 'B-', point: 2.67 },
+        { min: 55, max: 59, grade: 'C+', point: 2.33 },
+        { min: 50, max: 54, grade: 'C', point: 2.00 },
+        { min: 45, max: 49, grade: 'D', point: 1.67 },
+        { min: 40, max: 44, grade: 'D-', point: 1.33 },
+        { min: 35, max: 39, grade: 'E', point: 1.00 },
+        { min: 0, max: 34, grade: 'F', point: 0.00 }
+    ];
+
+    marksInput.addEventListener('input', function () {
+        const marks = parseFloat(this.value);
+        if (isNaN(marks) || marks < 0 || marks > 100) {
+            gradePreview.textContent = 'Enter valid marks (0-100)';
+            gradePreview.className = 'grade-preview';
+            return;
+        }
+
+        for (const g of gradingScheme) {
+            if (marks >= g.min && marks <= g.max) {
+                gradePreview.textContent = `Grade: ${g.grade} (${g.point.toFixed(2)} points)`;
+                gradePreview.className = `grade-preview grade-${g.grade.replace('-', 'minus').replace('+', 'plus')}`;
+                break;
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Student Assistant System{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Welcome Header -->
+    <header class="dashboard-header">
+        <div class="welcome-section">
+            <h1>Welcome back, <span class="highlight">{{ user.username }}</span>! 👋</h1>
+            <p>Here's your academic overview for {{ current_date.strftime('%A, %d %B %Y') }}</p>
+        </div>
+        <div class="header-actions">
+            {% if not user.profile %}
+            <a href="{{ url_for('profile.setup') }}" class="btn btn-warning">
+                <span>👤</span> Complete Profile
+            </a>
+            {% endif %}
+            <a href="{{ url_for('assignments.add_assignment') }}" class="btn btn-primary">
+                <span>➕</span> Add Task
+            </a>
+        </div>
+    </header>
+
+    <!-- Quick Stats -->
+    <section class="stats-grid">
+        <div class="stat-card stat-cgpa">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ "%.2f"|format(current_cgpa) }}</span>
+                <span class="stat-label">Current CGPA</span>
+            </div>
+            <div class="stat-badge">
+                {% if current_cgpa >= 3.5 %}Dean's List{% elif current_cgpa >= 3.0 %}Good{% elif current_cgpa >= 2.0
+                %}Pass{% else %}At Risk{% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card stat-attendance">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ "%.1f"|format(avg_attendance) }}%</span>
+                <span class="stat-label">Avg Attendance</span>
+            </div>
+            <div class="stat-badge {% if avg_attendance >= 80 %}success{% else %}warning{% endif %}">
+                {% if avg_attendance >= 80 %}Safe{% else %}At Risk{% endif %}
+            </div>
+        </div>
+
+        <div class="stat-card stat-subjects">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ total_subjects }}</span>
+                <span class="stat-label">Subjects</span>
+            </div>
+            <div class="stat-badge">{{ total_credits }} Credits</div>
+        </div>
+
+        <div
+            class="stat-card stat-risk {% if risk_level == 'High' %}danger{% elif risk_level == 'Medium' %}warning{% else %}success{% endif %}">
+            <div class="stat-icon">🎯</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ risk_level }}</span>
+                <span class="stat-label">Risk Level</span>
+            </div>
+            <div class="stat-badge">AI Predicted</div>
+        </div>
+    </section>
+
+    <!-- Main Content Grid -->
+    <div class="dashboard-grid">
+        <!-- Left Column -->
+        <div class="dashboard-column">
+            <!-- Today's Classes -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📅 Today's Classes</h2>
+                    <a href="{{ url_for('timetable.index') }}" class="btn btn-sm btn-ghost">View Timetable</a>
+                </div>
+                <div class="card-body">
+                    {% if today_classes %}
+                    <div class="today-schedule">
+                        {% for cls in today_classes %}
+                        <div class="schedule-item">
+                            <div class="schedule-time" style="background: {{ cls.color }};">
+                                {{ cls.start_time.strftime('%H:%M') }}
+                            </div>
+                            <div class="schedule-info">
+                                <strong>{{ cls.subject_name }}</strong>
+                                {% if cls.venue %}<span class="venue">📍 {{ cls.venue }}</span>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state small">
+                        <span>🎉</span>
+                        <p>No classes today!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Upcoming Assignments -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📝 Upcoming Deadlines</h2>
+                    <a href="{{ url_for('assignments.index') }}" class="btn btn-sm btn-ghost">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_assignments %}
+                    <ul class="deadline-list">
+                        {% for a in upcoming_assignments %}
+                        <li class="deadline-item {% if a.is_due_soon %}due-soon{% endif %}">
+                            <div class="deadline-info">
+                                <span class="deadline-title">{{ a.title }}</span>
+                                <span class="deadline-subject">{{ a.subject_name or 'No subject' }}</span>
+                            </div>
+                            <div class="deadline-date">
+                                <span class="days-left">{{ a.days_until_deadline }}d</span>
+                                <span class="date">{{ a.deadline.strftime('%d/%m') }}</span>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="empty-state small">
+                        <span>✅</span>
+                        <p>No upcoming deadlines!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CGPA Chart -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📊 CGPA Trend</h2>
+                </div>
+                <div class="card-body">
+                    {% if chart_data %}
+                    <div class="chart-container">
+                        <canvas id="cgpaChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="empty-icon">📈</span>
+                        <p>No CGPA history yet</p>
+                        <a href="{{ url_for('cgpa.index') }}" class="btn btn-sm btn-outline">Add Semester</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="dashboard-column">
+            <!-- Upcoming Exams -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📆 Upcoming Exams</h2>
+                    <a href="{{ url_for('exam_schedule.index') }}" class="btn btn-sm btn-ghost">View All</a>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_exams %}
+                    <div class="exam-countdown-list">
+                        {% for exam in upcoming_exams %}
+                        <div class="exam-item {% if exam.is_soon %}soon{% endif %}">
+                            <div class="exam-days">
+                                <span class="days-number">{{ exam.days_until }}</span>
+                                <span class="days-label">days</span>
+                            </div>
+                            <div class="exam-info">
+                                <strong>{{ exam.subject_name }}</strong>
+                                <span>{{ exam.exam_date.strftime('%d %b %Y') }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state small">
+                        <span>📆</span>
+                        <p>No upcoming exams scheduled</p>
+                        <a href="{{ url_for('exam_schedule.add_exam') }}" class="btn btn-sm btn-outline">Add Exam</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Alerts -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚠️ Alerts</h2>
+                </div>
+                <div class="card-body">
+                    {% if at_risk_subjects or weak_subjects %}
+                    <ul class="alert-list">
+                        {% for attendance in at_risk_subjects %}
+                        <li class="alert-item alert-danger">
+                            <span class="alert-icon">🚨</span>
+                            <div class="alert-content">
+                                <strong>{{ attendance.subject_name }}</strong>
+                                <p>Attendance at {{ "%.1f"|format(attendance.attendance_percentage) }}% - Risk of bar!
+                                </p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                        {% for result in weak_subjects %}
+                        <li class="alert-item alert-warning">
+                            <span class="alert-icon">⚠️</span>
+                            <div class="alert-content">
+                                <strong>{{ result.subject_name }}</strong>
+                                <p>Carry mark at {{ "%.1f"|format(result.carry_percentage) }}% - Below passing</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="success-state">
+                        <span class="success-icon">✅</span>
+                        <p>No alerts! You're on track.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>⚡ Quick Actions</h2>
+                </div>
+                <div class="card-body">
+                    <div class="action-grid">
+                        <a href="{{ url_for('timetable.index') }}" class="action-card">
+                            <span class="action-icon">📅</span>
+                            <span class="action-label">Timetable</span>
+                        </a>
+                        <a href="{{ url_for('cgpa.index') }}" class="action-card">
+                            <span class="action-icon">🧮</span>
+                            <span class="action-label">CGPA</span>
+                        </a>
+                        <a href="{{ url_for('finance.index') }}" class="action-card">
+                            <span class="action-icon">💰</span>
+                            <span class="action-label">Finance</span>
+                        </a>
+                        <a href="{{ url_for('assistant.index') }}" class="action-card">
+                            <span class="action-icon">🤖</span>
+                            <span class="action-label">AI Help</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Recommendation -->
+            <div class="card card-ai">
+                <div class="card-header">
+                    <h2>🤖 AI Insight</h2>
+                </div>
+                <div class="card-body">
+                    <div class="ai-message">
+                        {% if risk_level == 'High' %}
+                        <p>⚠️ <strong>Attention needed!</strong> Focus on improving attendance and marks. Consider
+                            seeking academic support.</p>
+                        {% elif risk_level == 'Medium' %}
+                        <p>📊 <strong>Room for improvement!</strong> Stay consistent with your studies and don't miss
+                            classes.</p>
+                        {% else %}
+                        <p>🌟 <strong>Great work!</strong> Keep up the excellent performance. Consider helping peers or
+                            exploring advanced topics.</p>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('assistant.index') }}" class="btn btn-block btn-gradient">
+                        Get Personalized Advice
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .today-schedule {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .schedule-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .schedule-time {
+        padding: 0.5rem 0.75rem;
+        border-radius: var(--radius-md);
+        color: white;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    .schedule-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .schedule-info .venue {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .deadline-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .deadline-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--glass-border);
+    }
+
+    .deadline-item:last-child {
+        border-bottom: none;
+    }
+
+    .deadline-item.due-soon {
+        background: rgba(239, 68, 68, 0.1);
+        margin: -0.5rem;
+        padding: 0.75rem;
+        border-radius: var(--radius-md);
+    }
+
+    .deadline-title {
+        font-weight: 500;
+        display: block;
+    }
+
+    .deadline-subject {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .deadline-date {
+        text-align: right;
+    }
+
+    .days-left {
+        display: block;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    .exam-countdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .exam-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: var(--glass-bg);
+        border-radius: var(--radius-md);
+    }
+
+    .exam-item.soon {
+        border: 1px solid var(--error-color);
+    }
+
+    .exam-days {
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .days-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        display: block;
+    }
+
+    .days-label {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .exam-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .exam-info span {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    {% if chart_data %}
+    const ctx = document.getElementById('cgpaChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels| tojson }},
+        datasets: [{
+            label: 'CGPA',
+            data: {{ chart_data| tojson }},
+        borderColor: '#4F46E5',
+        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: '#4F46E5',
+        pointRadius: 5,
+        pointHoverRadius: 7
+        }]
+    },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                min: 0,
+                max: 4,
+                ticks: {
+                    stepSize: 0.5
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+    {% endif %}
+</script>
+{% endblock %}

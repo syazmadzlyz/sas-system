@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Add/Edit Class - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>{% if class_item %}✏️ Edit Class{% else %}➕ Add Class{% endif %}</h1>
+        <p>{% if class_item %}Update class details{% else %}Add a new class to your timetable{% endif %}</p>
+    </div>
+
+    <div class="form-container">
+        <div class="card glass-card">
+            <div class="card-body">
+                <form method="POST" class="modern-form">
+                    <div class="form-section">
+                        <h3>📚 Subject Information</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="subject_code">Subject Code</label>
+                                <input type="text" id="subject_code" name="subject_code"
+                                    value="{{ class_item.subject_code if class_item else '' }}"
+                                    placeholder="e.g., INFO 4501" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="section">Section</label>
+                                <input type="text" id="section" name="section"
+                                    value="{{ class_item.section if class_item else '' }}" placeholder="e.g., Section 1"
+                                    class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="subject_name">Subject Name *</label>
+                            <input type="text" id="subject_name" name="subject_name"
+                                value="{{ class_item.subject_name if class_item else '' }}"
+                                placeholder="e.g., Software Engineering" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lecturer">Lecturer</label>
+                            <input type="text" id="lecturer" name="lecturer"
+                                value="{{ class_item.lecturer if class_item else '' }}" placeholder="e.g., Dr. Ahmad"
+                                class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>⏰ Schedule</h3>
+
+                        <div class="form-group">
+                            <label for="day">Day *</label>
+                            <select id="day" name="day" class="form-control" required>
+                                {% for d in days %}
+                                <option value="{{ d }}" {% if class_item and class_item.day==d %}selected{% endif %}>
+                                    {{ d }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="start_time">Start Time *</label>
+                                <input type="time" id="start_time" name="start_time"
+                                    value="{{ class_item.start_time.strftime('%H:%M') if class_item else '08:00' }}"
+                                    class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="end_time">End Time *</label>
+                                <input type="time" id="end_time" name="end_time"
+                                    value="{{ class_item.end_time.strftime('%H:%M') if class_item else '10:00' }}"
+                                    class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="venue">Venue/Room</label>
+                            <input type="text" id="venue" name="venue"
+                                value="{{ class_item.venue if class_item else '' }}" placeholder="e.g., KICT Lab 1"
+                                class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>🎨 Color</h3>
+                        <div class="color-picker">
+                            {% for color in colors %}
+                            <label class="color-option">
+                                <input type="radio" name="color" value="{{ color }}" {% if (class_item and
+                                    class_item.color==color) or (not class_item and loop.first) %}checked{% endif %}>
+                                <span class="color-swatch" style="background: {{ color }};"></span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            {% if class_item %}Update Class{% else %}Add Class{% endif %}
+                        </button>
+                        <a href="{{ url_for('timetable.index') }}" class="btn btn-outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .color-picker {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .color-option {
+        cursor: pointer;
+    }
+
+    .color-option input {
+        display: none;
+    }
+
+    .color-swatch {
+        display: block;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .color-option input:checked+.color-swatch {
+        border-color: var(--text-primary);
+        transform: scale(1.1);
+    }
+
+    .color-swatch:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}

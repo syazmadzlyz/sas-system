@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>👥 User Management</h1>
+            <p>Block, Unblock, or Warn users</p>
+        </div>
+        <a href="{{ url_for('admin.index') }}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar mb-4">
+        <form action="{{ url_for('admin.user_list') }}" method="GET" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control" placeholder="Search username or email..."
+                value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+    </div>
+
+    <div class="card glass-card">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Status</th>
+                        <th>Last Seen</th>
+                        <th>Warnings</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr {% if user.is_blocked %}style="opacity: 0.6; background: rgba(255,0,0,0.05);" {% endif %}>
+                        <td>#{{ user.id }}</td>
+                        <td>
+                            <div class="d-flex flex-column">
+                                <span class="font-bold">{{ user.username }}</span>
+                                <small class="text-muted">{{ user.email }}</small>
+                                {% if user.is_admin %}<span class="badge badge-primary badge-sm">ADMIN</span>{% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            {% if user.is_blocked %}
+                            <span class="badge badge-danger">BLOCKED</span>
+                            {% else %}
+                            <span class="badge badge-success">Active</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.last_seen.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if user.warning_count > 0 %}
+                            <span class="badge badge-warning">{{ user.warning_count }} ⚠️</span>
+                            {% else %}
+                            0
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <form action="{{ url_for('admin.toggle_block', id=user.id) }}" method="POST">
+                                    {% if user.is_blocked %}
+                                    <button type="submit" class="btn btn-sm btn-success">Unblock</button>
+                                    {% else %}
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Block this user?')">Block</button>
+                                    {% endif %}
+                                </form>
+                                <form action="{{ url_for('admin.warn_user', id=user.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-warning"
+                                        title="Send Warning">⚡Warn</button>
+                                </form>
+                                {% if not user.is_admin %}
+                                <form action="{{ url_for('admin.impersonate_user', id=user.id) }}" method="POST">
+                                    <button type="submit" class="btn btn-sm btn-ghost" title="Login as User">👻</button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

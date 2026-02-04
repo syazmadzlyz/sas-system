@@ -1,0 +1,349 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Checker - Student Assistant System{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    <header class="page-header">
+        <div class="header-content">
+            <h1>📝 Exam Checker</h1>
+            <p>Calculate minimum marks needed for carry marks and final exams</p>
+        </div>
+    </header>
+
+    <div class="content-grid">
+        <!-- Calculator Section -->
+        <div class="card card-form">
+            <div class="card-header">
+                <h2>Calculate Requirements</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="examForm" class="form">
+                    <div class="form-group">
+                        <label for="subject_name">Subject Name</label>
+                        <input type="text" id="subject_name" name="subject_name" placeholder="e.g., Data Structures"
+                            required list="subjectList">
+                        <datalist id="subjectList">
+                            {% for subject in subjects %}
+                            <option value="{{ subject.name }}">
+                                {% endfor %}
+                        </datalist>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>📚 Carry Mark</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="carry_mark">Your Mark</label>
+                                <input type="number" id="carry_mark" name="carry_mark" placeholder="e.g., 25" min="0"
+                                    step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="carry_max">Maximum</label>
+                                <input type="number" id="carry_max" name="carry_max" value="40" min="1" step="0.1">
+                            </div>
+                        </div>
+                        <div class="requirement-preview" id="carryPreview">
+                            Minimum needed: <strong>14</strong> marks (35% of 40)
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>📄 Final Exam</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="final_mark">Your Mark (if available)</label>
+                                <input type="number" id="final_mark" name="final_mark"
+                                    placeholder="Leave blank if not taken" min="0" step="0.1">
+                            </div>
+                            <div class="form-group">
+                                <label for="final_max">Maximum</label>
+                                <input type="number" id="final_max" name="final_max" value="60" min="1" step="0.1">
+                            </div>
+                        </div>
+                        <div class="requirement-preview" id="finalPreview">
+                            Minimum needed: <strong>21</strong> marks (35% of 60)
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="save_result">
+                            <span>Save result to database</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Check Requirements
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        {% if calculation %}
+        <div class="card card-result">
+            <div class="card-header">
+                <h2>📊 Result for {{ calculation.subject }}</h2>
+            </div>
+            <div class="card-body">
+                <div class="exam-result">
+                    <!-- Carry Mark Result -->
+                    <div
+                        class="result-section {% if calculation.carry.passed %}success{% elif calculation.carry.passed == False %}danger{% else %}neutral{% endif %}">
+                        <h3>📚 Carry Mark</h3>
+                        <div class="result-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ calculation.carry.mark if calculation.carry.mark else '--'
+                                    }}/{{ calculation.carry.max }}</span>
+                                <span class="stat-label">Your Mark</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.carry.percentage) if
+                                    calculation.carry.percentage else '--' }}%</span>
+                                <span class="stat-label">Percentage</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.carry.min_needed) }}</span>
+                                <span class="stat-label">Min Needed</span>
+                            </div>
+                        </div>
+                        {% if calculation.carry.passed is not none %}
+                        <div class="result-status">
+                            {% if calculation.carry.passed %}
+                            <span class="status-icon">✅</span> Passed carry mark requirement
+                            {% else %}
+                            <span class="status-icon">❌</span> Below 35% - Failed requirement
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Final Exam Result -->
+                    <div
+                        class="result-section {% if calculation.final.passed %}success{% elif calculation.final.passed == False %}danger{% else %}neutral{% endif %}">
+                        <h3>📄 Final Exam</h3>
+                        <div class="result-stats">
+                            <div class="stat">
+                                <span class="stat-value">{{ calculation.final.mark if calculation.final.mark else '--'
+                                    }}/{{ calculation.final.max }}</span>
+                                <span class="stat-label">Your Mark</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.final.percentage) if
+                                    calculation.final.percentage else '--' }}%</span>
+                                <span class="stat-label">Percentage</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.final.min_needed) }}</span>
+                                <span class="stat-label">Min Needed (35%)</span>
+                            </div>
+                        </div>
+                        {% if calculation.final.passed is not none %}
+                        <div class="result-status">
+                            {% if calculation.final.passed %}
+                            <span class="status-icon">✅</span> Passed final exam requirement
+                            {% else %}
+                            <span class="status-icon">❌</span> Below 35% - Failed requirement
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Overall Result -->
+                    <div
+                        class="result-section overall {% if calculation.status == 'passed' %}success{% elif calculation.status == 'failed' %}danger{% else %}warning{% endif %}">
+                        <h3>🎯 Overall Status</h3>
+                        <div class="result-stats">
+                            <div class="stat large">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.total.mark) }}/{{
+                                    calculation.total.max }}</span>
+                                <span class="stat-label">Total Marks</span>
+                            </div>
+                            <div class="stat large">
+                                <span class="stat-value">{{ "%.1f"|format(calculation.total.percentage) }}%</span>
+                                <span class="stat-label">Percentage</span>
+                            </div>
+                        </div>
+                        <div class="result-message">
+                            {{ calculation.status_message }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- History Section -->
+        <div class="card card-history">
+            <div class="card-header">
+                <h2>📋 Saved Results</h2>
+            </div>
+            <div class="card-body">
+                {% if results %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Carry</th>
+                                <th>Final</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr>
+                                <td class="td-subject">{{ result.subject_name }}</td>
+                                <td>
+                                    {{ "%.1f"|format(result.carry_mark) if result.carry_mark else '--' }}/{{
+                                    result.carry_max }}
+                                    <span
+                                        class="badge {% if result.passed_carry %}badge-success{% else %}badge-danger{% endif %}">
+                                        {{ "%.0f"|format(result.carry_percentage) }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    {{ "%.1f"|format(result.final_mark) if result.final_mark else '--' }}/{{
+                                    result.final_max }}
+                                    {% if result.final_mark %}
+                                    <span
+                                        class="badge {% if result.passed_final %}badge-success{% else %}badge-danger{% endif %}">
+                                        {{ "%.0f"|format(result.final_percentage) }}%
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td><strong>{{ "%.1f"|format(result.total_marks) if result.total_marks else '--'
+                                        }}</strong></td>
+                                <td>
+                                    {% if result.passed_carry and (result.passed_final or not result.final_mark) %}
+                                    <span class="badge badge-success">On Track</span>
+                                    {% else %}
+                                    <span class="badge badge-danger">At Risk</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('exam.delete', id=result.id) }}"
+                                        style="display: inline">
+                                        <button type="submit" class="btn btn-sm btn-ghost btn-danger" title="Delete">
+                                            🗑️
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon">📝</span>
+                    <p>No results saved yet</p>
+                    <p class="text-muted">Check the "Save result" option when calculating</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="card card-info">
+            <div class="card-header">
+                <h2>ℹ️ Passing Requirements</h2>
+            </div>
+            <div class="card-body">
+                <div class="info-content">
+                    <div class="info-item">
+                        <span class="info-icon">📚</span>
+                        <div>
+                            <strong>Carry Mark Requirement</strong>
+                            <p>You must score at least <strong>35%</strong> in your carry mark (assessments, quizzes,
+                                assignments)</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">📄</span>
+                        <div>
+                            <strong>Final Exam Requirement</strong>
+                            <p>You must score at least <strong>35%</strong> in your final examination</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">🎯</span>
+                        <div>
+                            <strong>Overall Pass</strong>
+                            <p>To pass, you need both component requirements AND a total of at least
+                                <strong>50%</strong> (Grade C)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="info-item highlight">
+                        <span class="info-icon">⚠️</span>
+                        <div>
+                            <strong>Important</strong>
+                            <p>Failing either component (<35%) will result in failing the subject, regardless of total
+                                    marks</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Live preview of minimum marks needed
+    const carryMax = document.getElementById('carry_max');
+    const finalMax = document.getElementById('final_max');
+    const carryMark = document.getElementById('carry_mark');
+    const finalMark = document.getElementById('final_mark');
+    const carryPreview = document.getElementById('carryPreview');
+    const finalPreview = document.getElementById('finalPreview');
+
+    function updatePreviews() {
+        const carryMaxVal = parseFloat(carryMax.value) || 40;
+        const finalMaxVal = parseFloat(finalMax.value) || 60;
+
+        const carryMin = (carryMaxVal * 0.35).toFixed(1);
+        const finalMin = (finalMaxVal * 0.35).toFixed(1);
+
+        carryPreview.innerHTML = `Minimum needed: <strong>${carryMin}</strong> marks (35% of ${carryMaxVal})`;
+        finalPreview.innerHTML = `Minimum needed: <strong>${finalMin}</strong> marks (35% of ${finalMaxVal})`;
+
+        // Highlight if entered mark is below minimum
+        const carryMarkVal = parseFloat(carryMark.value);
+        const finalMarkVal = parseFloat(finalMark.value);
+
+        if (!isNaN(carryMarkVal)) {
+            if (carryMarkVal < carryMin) {
+                carryPreview.classList.add('danger');
+                carryPreview.innerHTML += ' ⚠️ <span class="text-danger">Your mark is below minimum!</span>';
+            } else {
+                carryPreview.classList.remove('danger');
+                carryPreview.innerHTML += ' ✅';
+            }
+        }
+
+        if (!isNaN(finalMarkVal)) {
+            if (finalMarkVal < finalMin) {
+                finalPreview.classList.add('danger');
+                finalPreview.innerHTML += ' ⚠️ <span class="text-danger">Your mark is below minimum!</span>';
+            } else {
+                finalPreview.classList.remove('danger');
+                finalPreview.innerHTML += ' ✅';
+            }
+        }
+    }
+
+    carryMax.addEventListener('input', updatePreviews);
+    finalMax.addEventListener('input', updatePreviews);
+    carryMark.addEventListener('input', updatePreviews);
+    finalMark.addEventListener('input', updatePreviews);
+
+    // Initial preview
+    updatePreviews();
+</script>
+{% endblock %}

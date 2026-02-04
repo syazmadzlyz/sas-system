@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Assignments - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>📝 Assignments</h1>
+            <p>Track your assignments and deadlines</p>
+        </div>
+        <a href="{{ url_for('assignments.add_assignment') }}" class="btn btn-primary">+ Add Assignment</a>
+    </div>
+
+    <!-- Overdue Alert -->
+    {% if overdue %}
+    <div class="alert alert-danger">
+        <span>⚠️</span>
+        <strong>{{ overdue|length }} overdue assignment(s)!</strong> Please submit them as soon as possible.
+    </div>
+    {% endif %}
+
+    <!-- Due Soon Section -->
+    {% if due_soon %}
+    <div class="card glass-card priority-high">
+        <div class="card-header">
+            <h2>🔥 Due Soon (within 3 days)</h2>
+            <span class="badge badge-danger">{{ due_soon|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="assignment-list">
+                {% for a in due_soon %}
+                <div class="assignment-item priority-{{ a.priority }}">
+                    <div class="assignment-main">
+                        <div class="assignment-priority {{ a.priority }}"></div>
+                        <div class="assignment-details">
+                            <h3>{{ a.title }}</h3>
+                            <div class="assignment-meta">
+                                {% if a.subject_name %}<span>📚 {{ a.subject_name }}</span>{% endif %}
+                                <span>📅 {{ a.deadline.strftime('%d/%m/%Y %H:%M') }}</span>
+                                <span class="countdown">⏰ {{ a.days_until_deadline }} days left</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="assignment-actions">
+                        <form action="{{ url_for('assignments.submit_assignment', id=a.id) }}" method="POST"
+                            style="display:inline;">
+                            <button type="submit" class="btn btn-success btn-sm">✅ Submit</button>
+                        </form>
+                        <a href="{{ url_for('assignments.edit_assignment', id=a.id) }}"
+                            class="btn btn-outline btn-sm">Edit</a>
+                        <form action="{{ url_for('assignments.delete_assignment', id=a.id) }}" method="POST"
+                            style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Upcoming Assignments -->
+    {% if upcoming %}
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>📋 Upcoming</h2>
+            <span class="badge badge-primary">{{ upcoming|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="assignment-list">
+                {% for a in upcoming %}
+                <div class="assignment-item">
+                    <div class="assignment-main">
+                        <div class="assignment-priority {{ a.priority }}"></div>
+                        <div class="assignment-details">
+                            <h3>{{ a.title }}</h3>
+                            <div class="assignment-meta">
+                                {% if a.subject_name %}<span>📚 {{ a.subject_name }}</span>{% endif %}
+                                <span>📅 {{ a.deadline.strftime('%d/%m/%Y') }}</span>
+                                {% if a.weightage %}<span>📊 {{ a.weightage }}%</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="assignment-actions">
+                        <span class="badge badge-{{ a.priority }}">{{ a.priority }}</span>
+                        <a href="{{ url_for('assignments.edit_assignment', id=a.id) }}"
+                            class="btn btn-outline btn-sm">Edit</a>
+                        <form action="{{ url_for('assignments.delete_assignment', id=a.id) }}" method="POST"
+                            style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Completed Assignments -->
+    {% if completed %}
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>✅ Completed</h2>
+            <span class="badge badge-success">{{ completed|length }}</span>
+        </div>
+        <div class="card-body">
+            <div class="assignment-list completed">
+                {% for a in completed %}
+                <div class="assignment-item completed">
+                    <div class="assignment-main">
+                        <div class="assignment-details">
+                            <h3><s>{{ a.title }}</s></h3>
+                            <div class="assignment-meta">
+                                {% if a.subject_name %}<span>📚 {{ a.subject_name }}</span>{% endif %}
+                                <span>Submitted: {{ a.submission_date.strftime('%d/%m/%Y') if a.submission_date else
+                                    'N/A' }}</span>
+                                {% if a.grade %}<span class="grade">Grade: {{ a.grade }}</span>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="assignment-actions">
+                        <span class="badge {% if a.status == 'late' %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ a.status }}
+                        </span>
+                        <form action="{{ url_for('assignments.delete_assignment', id=a.id) }}" method="POST"
+                            style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm">🗑️</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not assignments %}
+    <div class="empty-state">
+        <span class="empty-icon">📝</span>
+        <h3>No Assignments Yet</h3>
+        <p>Add your assignments to track deadlines</p>
+        <a href="{{ url_for('assignments.add_assignment') }}" class="btn btn-primary">Add First Assignment</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .assignment-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .assignment-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        background: var(--glass-bg);
+        border-radius: var(--radius-md);
+        transition: transform 0.2s;
+    }
+
+    .assignment-item:hover {
+        transform: translateX(4px);
+    }
+
+    .assignment-main {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .assignment-priority {
+        width: 4px;
+        height: 40px;
+        border-radius: 2px;
+    }
+
+    .assignment-priority.low {
+        background: var(--success-color);
+    }
+
+    .assignment-priority.medium {
+        background: var(--warning-color);
+    }
+
+    .assignment-priority.high {
+        background: var(--error-color);
+    }
+
+    .assignment-priority.urgent {
+        background: #DC2626;
+    }
+
+    .assignment-details h3 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1rem;
+    }
+
+    .assignment-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+
+    .countdown {
+        color: var(--error-color);
+        font-weight: 600;
+    }
+
+    .assignment-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .priority-high {
+        border: 1px solid var(--error-color);
+    }
+
+    .badge-low {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .badge-medium {
+        background: var(--warning-color);
+        color: white;
+    }
+
+    .badge-high {
+        background: var(--error-color);
+        color: white;
+    }
+
+    .badge-urgent {
+        background: #DC2626;
+        color: white;
+    }
+
+    .assignment-item.completed {
+        opacity: 0.7;
+    }
+
+    .grade {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+</style>
+{% endblock %}

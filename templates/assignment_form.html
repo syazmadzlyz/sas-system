@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Add Assignment - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>{% if assignment %}✏️ Edit Assignment{% else %}➕ Add Assignment{% endif %}</h1>
+    </div>
+
+    <div class="form-container">
+        <div class="card glass-card">
+            <div class="card-body">
+                <form method="POST" class="modern-form">
+                    <div class="form-section">
+                        <h3>📚 Assignment Details</h3>
+
+                        <div class="form-group">
+                            <label for="title">Title *</label>
+                            <input type="text" id="title" name="title"
+                                value="{{ assignment.title if assignment else '' }}"
+                                placeholder="e.g., Assignment 1 - Database Design" class="form-control" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="subject_code">Subject Code</label>
+                                <input type="text" id="subject_code" name="subject_code"
+                                    value="{{ assignment.subject_code if assignment else '' }}"
+                                    placeholder="e.g., INFO 3305" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="subject_name">Subject Name</label>
+                                <input type="text" id="subject_name" name="subject_name"
+                                    value="{{ assignment.subject_name if assignment else '' }}"
+                                    placeholder="e.g., Database Systems" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="3" class="form-control"
+                                placeholder="What is this assignment about?">{{ assignment.description if assignment else '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>⏰ Deadline & Priority</h3>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="deadline">Deadline *</label>
+                                <input type="datetime-local" id="deadline" name="deadline"
+                                    value="{{ assignment.deadline.strftime('%Y-%m-%dT%H:%M') if assignment else '' }}"
+                                    class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="priority">Priority</label>
+                                <select id="priority" name="priority" class="form-control">
+                                    {% for p in priorities %}
+                                    <option value="{{ p }}" {% if assignment and assignment.priority==p %}selected{%
+                                        endif %}>
+                                        {% if p == 'low' %}🟢 Low
+                                        {% elif p == 'medium' %}🟡 Medium
+                                        {% elif p == 'high' %}🟠 High
+                                        {% else %}🔴 Urgent{% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="weightage">Weightage (%)</label>
+                                <input type="number" id="weightage" name="weightage" step="0.1" min="0" max="100"
+                                    value="{{ assignment.weightage if assignment else '' }}" placeholder="e.g., 15"
+                                    class="form-control">
+                            </div>
+
+                            {% if assignment %}
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" name="status" class="form-control">
+                                    {% for s in statuses %}
+                                    <option value="{{ s }}" {% if assignment.status==s %}selected{% endif %}>
+                                        {{ s|replace('_', ' ')|title }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if assignment %}
+                        <div class="form-group">
+                            <label for="grade">Grade (if submitted)</label>
+                            <input type="text" id="grade" name="grade"
+                                value="{{ assignment.grade if assignment else '' }}" placeholder="e.g., A, 85%"
+                                class="form-control">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" name="notes" rows="2" class="form-control"
+                            placeholder="Any additional notes...">{{ assignment.notes if assignment else '' }}</textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            {% if assignment %}Update{% else %}Add{% endif %} Assignment
+                        </button>
+                        <a href="{{ url_for('assignments.index') }}" class="btn btn-outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

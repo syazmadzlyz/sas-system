@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}Study Planner - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>📋 Study Planner</h1>
+            <p>Plan your day and track productivity</p>
+        </div>
+        <a href="{{ url_for('planner.add_task') }}" class="btn btn-primary">+ Add Task</a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-4">
+        <div class="stat-card glass-card">
+            <div class="stat-icon">📅</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ today.strftime('%d %b') }}</span>
+                <span class="stat-label">Today</span>
+            </div>
+        </div>
+
+        <div class="stat-card glass-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ completed_this_week }}/{{ total_this_week }}</span>
+                <span class="stat-label">Completed This Week</span>
+            </div>
+        </div>
+
+        <div class="stat-card glass-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ completion_rate }}%</span>
+                <span class="stat-label">Completion Rate</span>
+            </div>
+        </div>
+
+        <div class="stat-card glass-card">
+            <div class="stat-icon">⏱️</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ "%.1f"|format(study_hours) }}h</span>
+                <span class="stat-label">Study Hours</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Tasks -->
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>📌 Today's Tasks</h2>
+            <a href="{{ url_for('planner.weekly_view') }}" class="btn btn-outline btn-sm">Weekly View</a>
+        </div>
+        <div class="card-body">
+            {% if today_tasks %}
+            <div class="task-list">
+                {% for task in today_tasks %}
+                <div class="task-item {% if task.is_completed %}completed{% endif %}">
+                    <div class="task-checkbox">
+                        {% if not task.is_completed %}
+                        <form action="{{ url_for('planner.complete_task', id=task.id) }}" method="POST">
+                            <button type="submit" class="checkbox-btn" title="Mark as complete">
+                                <span></span>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="checkbox-done">✅</span>
+                        {% endif %}
+                    </div>
+                    <div class="task-content">
+                        <span class="task-title {% if task.is_completed %}strikethrough{% endif %}">{{ task.title
+                            }}</span>
+                        <div class="task-meta">
+                            {% if task.category %}
+                            <span class="task-category">{{ task.category }}</span>
+                            {% endif %}
+                            {% if task.estimated_hours %}
+                            <span>⏱️ {{ task.estimated_hours }}h</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="task-actions" style="display:flex; gap:0.5rem; margin-right: 1rem;">
+                        <a href="{{ url_for('planner.edit_task', id=task.id) }}" class="btn-icon">✏️</a>
+                        <form action="{{ url_for('planner.delete_task', id=task.id) }}" method="POST">
+                            <button type="submit" class="btn-icon text-danger" title="Delete">🗑️</button>
+                        </form>
+                    </div>
+                    <div class="task-priority priority-{{ task.priority }}"></div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state small">
+                <span>📋</span>
+                <p>No tasks for today. Add some tasks to track your progress!</p>
+                <a href="{{ url_for('planner.add_task') }}" class="btn btn-outline btn-sm">Add Task</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    {% if upcoming_tasks %}
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>🔜 Upcoming Tasks</h2>
+        </div>
+        <div class="card-body">
+            <div class="task-list">
+                {% for task in upcoming_tasks %}
+                <div class="task-item">
+                    <div class="task-date">
+                        <span class="date-day">{{ task.due_date.strftime('%d') }}</span>
+                        <span class="date-month">{{ task.due_date.strftime('%b') }}</span>
+                    </div>
+                    <div class="task-content">
+                        <span class="task-title">{{ task.title }}</span>
+                        <div class="task-meta">
+                            {% if task.category %}<span>{{ task.category }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="task-actions" style="display:flex; gap:0.5rem; margin-right: 1rem;">
+                        <a href="{{ url_for('planner.edit_task', id=task.id) }}" class="btn-icon">✏️</a>
+                        <form action="{{ url_for('planner.delete_task', id=task.id) }}" method="POST">
+                            <button type="submit" class="btn-icon text-danger" title="Delete">🗑️</button>
+                        </form>
+                    </div>
+                    <div class="task-priority priority-{{ task.priority }}"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Add -->
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>⚡ Quick Add</h2>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('planner.add_task') }}" method="POST" class="quick-add-form">
+                <input type="text" name="title" placeholder="What do you need to do?" class="form-control" required>
+                <input type="hidden" name="due_date" value="{{ today.strftime('%Y-%m-%d') }}">
+                <input type="hidden" name="priority" value="medium">
+                <button type="submit" class="btn btn-primary">Add</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .task-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: var(--glass-bg);
+        border-radius: var(--radius-md);
+        transition: all 0.2s;
+    }
+
+    .task-item.completed {
+        opacity: 0.6;
+    }
+
+    .checkbox-btn {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .checkbox-btn:hover {
+        background: var(--primary-color);
+    }
+
+    .checkbox-done {
+        font-size: 1.2rem;
+    }
+
+    .task-content {
+        flex: 1;
+    }
+
+    .task-title {
+        font-weight: 500;
+    }
+
+    .task-title.strikethrough {
+        text-decoration: line-through;
+        color: var(--text-muted);
+    }
+
+    .task-meta {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.25rem;
+    }
+
+    .task-category {
+        background: var(--glass-bg);
+        padding: 0.125rem 0.5rem;
+        border-radius: var(--radius-sm);
+    }
+
+    .task-priority {
+        width: 4px;
+        height: 30px;
+        border-radius: 2px;
+    }
+
+    .task-priority.priority-low {
+        background: var(--success-color);
+    }
+
+    .task-priority.priority-medium {
+        background: var(--warning-color);
+    }
+
+    .task-priority.priority-high {
+        background: var(--error-color);
+    }
+
+    .task-priority.priority-urgent {
+        background: #DC2626;
+    }
+
+    .task-date {
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .date-day {
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: block;
+    }
+
+    .date-month {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+    }
+
+    .quick-add-form {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .quick-add-form input {
+        flex: 1;
+    }
+
+    .grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .grid-4 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+{% endblock %}

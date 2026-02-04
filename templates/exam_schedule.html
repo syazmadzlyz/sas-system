@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Exam Schedule - SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>📆 Final Exam Schedule</h1>
+            <p>Track your exam dates and venues</p>
+        </div>
+        <a href="{{ url_for('exam_schedule.add_exam') }}" class="btn btn-primary">+ Add Exam</a>
+    </div>
+
+    <!-- Upcoming Exams with Countdown -->
+    {% if upcoming %}
+    <div class="exam-countdown-grid">
+        {% for exam in upcoming[:3] %}
+        <div class="countdown-card glass-card {% if exam.is_soon %}soon{% endif %}">
+            <div class="countdown-header">
+                <span class="exam-subject">{{ exam.subject_name }}</span>
+                {% if exam.subject_code %}<span class="exam-code">{{ exam.subject_code }}</span>{% endif %}
+            </div>
+            <div class="countdown-body">
+                <div class="countdown-number">{{ exam.days_until }}</div>
+                <div class="countdown-label">days left</div>
+            </div>
+            <div class="countdown-footer">
+                <span>📅 {{ exam.exam_date.strftime('%d %B %Y') }}</span>
+                {% if exam.start_time %}<span>🕐 {{ exam.start_time.strftime('%H:%M') }}</span>{% endif %}
+                {% if exam.venue %}<span>📍 {{ exam.venue }}</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- All Upcoming Exams -->
+    {% if upcoming %}
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>📅 Upcoming Exams</h2>
+            <span class="badge badge-primary">{{ upcoming|length }}</span>
+        </div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Venue</th>
+                        <th>Seat</th>
+                        <th>Days Left</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exam in upcoming %}
+                    <tr class="{% if exam.is_soon %}exam-soon{% endif %}">
+                        <td>
+                            <strong>{{ exam.subject_name }}</strong>
+                            {% if exam.subject_code %}<br><small>{{ exam.subject_code }}</small>{% endif %}
+                        </td>
+                        <td>{{ exam.exam_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ exam.start_time.strftime('%H:%M') if exam.start_time else '-' }}</td>
+                        <td>{{ exam.venue or '-' }}</td>
+                        <td>{{ exam.seat_number or '-' }}</td>
+                        <td>
+                            <span
+                                class="badge {% if exam.days_until <= 3 %}badge-danger{% elif exam.days_until <= 7 %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ exam.days_until }} days
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('exam_schedule.edit_exam', id=exam.id) }}"
+                                class="btn btn-sm btn-outline">Edit</a>
+                            <form action="{{ url_for('exam_schedule.delete_exam', id=exam.id) }}" method="POST"
+                                style="display:inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Past Exams -->
+    {% if past %}
+    <div class="card glass-card mt-4">
+        <div class="card-header">
+            <h2>✅ Completed Exams</h2>
+        </div>
+        <div class="card-body">
+            <div class="past-exams">
+                {% for exam in past %}
+                <div class="past-exam-item">
+                    <span class="exam-name">{{ exam.subject_name }}</span>
+                    <span class="exam-date">{{ exam.exam_date.strftime('%d/%m/%Y') }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not upcoming and not past %}
+    <div class="empty-state">
+        <span class="empty-icon">📆</span>
+        <h3>No Exams Scheduled</h3>
+        <p>Add your final exam dates to track them</p>
+        <a href="{{ url_for('exam_schedule.add_exam') }}" class="btn btn-primary">Add First Exam</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .exam-countdown-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .countdown-card {
+        text-align: center;
+        padding: 1.5rem;
+        border: 2px solid transparent;
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+    }
+
+    .countdown-card.soon {
+        border-color: var(--danger);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+        }
+    }
+
+    .countdown-header {
+        margin-bottom: 1rem;
+    }
+
+    .exam-subject {
+        font-weight: 600;
+        font-size: 1.1rem;
+        display: block;
+        color: var(--gray-900);
+    }
+
+    .exam-code {
+        font-size: 0.85rem;
+        color: var(--gray-500);
+    }
+
+    .countdown-body {
+        margin: 1.5rem 0;
+    }
+
+    .countdown-number {
+        font-size: 4rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .countdown-label {
+        font-size: 1rem;
+        color: var(--gray-600);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .countdown-footer {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+        color: var(--gray-700);
+    }
+
+    .countdown-footer span {
+        color: var(--gray-700);
+    }
+
+    /* Highlighted Row (Exams Soon) */
+    .highlight {
+        background: transparent !important;
+    }
+
+    .highlight td:first-child {
+        border-left: 4px solid var(--danger);
+    }
+
+    .highlight td {
+        color: var(--gray-900) !important;
+        background: rgba(239, 68, 68, 0.05) !important;
+        /* Very faint red background */
+        font-weight: 500;
+    }
+
+    .highlight td small {
+        color: var(--gray-600) !important;
+    }
+</style>
+{% endblock %}

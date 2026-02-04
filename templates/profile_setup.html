@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Profile Setup - SAS{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card glass-card">
+        <div class="auth-header">
+            <h1>🎓 Welcome to SAS!</h1>
+            <p>Let's set up your IIUM student profile</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            <div class="form-section">
+                <h3>📋 Personal Information</h3>
+
+                <div class="form-group">
+                    <label for="matric_number">Matric Number</label>
+                    <input type="text" id="matric_number" name="matric_number" placeholder="e.g., 2012345"
+                        class="form-control" pattern="[0-9]{7}" title="Enter 7-digit matric number">
+                    <span class="form-hint">Your 7-digit IIUM matric number</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number (Optional)</label>
+                    <input type="tel" id="phone" name="phone" placeholder="e.g., 0123456789" class="form-control">
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>🏛️ Academic Information</h3>
+
+                <div class="form-group">
+                    <label for="kulliyyah">Kulliyyah</label>
+                    <select id="kulliyyah" name="kulliyyah" class="form-control" required>
+                        <option value="">Select your Kulliyyah</option>
+                        {% for code, name in kulliyyahs %}
+                        <option value="{{ code }}">{{ code }} - {{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="program_name">Program Name</label>
+                    <input type="text" id="program_name" name="program_name"
+                        placeholder="e.g., Bachelor of Computer Science" class="form-control">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="program_level">Program Level</label>
+                        <select id="program_level" name="program_level" class="form-control" required>
+                            <option value="">Select level</option>
+                            {% for code, name in levels %}
+                            <option value="{{ code }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="current_semester">Current Semester</label>
+                        <select id="current_semester" name="current_semester" class="form-control">
+                            {% for i in range(1, 15) %}
+                            <option value="{{ i }}">Semester {{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="intake_year">Intake Year</label>
+                    <input type="number" id="intake_year" name="intake_year" placeholder="e.g., 2023"
+                        class="form-control" min="2015" max="2030">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-lg btn-block">
+                    Complete Setup ✨
+                </button>
+            </div>
+        </form>
+
+        <div class="auth-footer">
+            <a href="{{ url_for('dashboard.index') }}">Skip for now →</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

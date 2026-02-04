@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Add Payment - I-SAS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <div class="header-content">
+            <h1>💳 Add Payment</h1>
+            <p>Record a payment you've made</p>
+        </div>
+        <a href="{{ url_for('finance.index') }}" class="btn btn-outline">← Back</a>
+    </div>
+
+    <div class="card glass-card" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-body">
+            <form method="POST" class="form">
+                <div class="form-group">
+                    <label for="semester">For Semester</label>
+                    <select id="semester" name="semester" required class="form-control">
+                        {% for sem in semesters %}
+                        <option value="{{ sem }}">{{ sem }}</option>
+                        {% else %}
+                        <option value="Semester 1">Semester 1</option>
+                        <option value="Semester 2">Semester 2</option>
+                        <option value="Semester 3">Semester 3</option>
+                        <option value="Semester 4">Semester 4</option>
+                        <option value="Semester 5">Semester 5</option>
+                        <option value="Semester 6">Semester 6</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Type</label>
+                    <div class="payment-type-options">
+                        {% for code, label in payment_types %}
+                        <label class="payment-type-option">
+                            <input type="radio" name="payment_type" value="{{ code }}" {% if loop.first %}checked{%
+                                endif %}>
+                            <span class="option-content">
+                                {% if code == 'full' %}💰{% elif code == 'partial' %}💳{% else %}🎓{% endif %}
+                                <strong>{{ label }}</strong>
+                            </span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount Paid (RM)</label>
+                    <input type="number" id="amount" name="amount" placeholder="e.g., 1000" min="0" step="0.01" required
+                        class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="transaction_date">Payment Date</label>
+                    <input type="date" id="transaction_date" name="transaction_date" value="{{ today }}" required
+                        class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description (Optional)</label>
+                    <input type="text" id="description" name="description" placeholder="e.g., First instalment"
+                        class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="receipt_number">Receipt Number (Optional)</label>
+                    <input type="text" id="receipt_number" name="receipt_number" placeholder="e.g., REC-12345"
+                        class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="2" placeholder="Any additional notes..."
+                        class="form-control"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Record Payment
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .payment-type-options {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .payment-type-option {
+        flex: 1;
+        min-width: 140px;
+        cursor: pointer;
+    }
+
+    .payment-type-option input {
+        display: none;
+    }
+
+    .payment-type-option .option-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+
+    .payment-type-option input:checked+.option-content {
+        border-color: var(--primary);
+        background: rgba(79, 70, 229, 0.1);
+    }
+
+    .payment-type-option:hover .option-content {
+        border-color: var(--primary);
+    }
+</style>
+{% endblock %}
