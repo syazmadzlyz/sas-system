@@ -107,7 +107,6 @@ def create_app(config_name='development'):
         from datetime import date, datetime
         return {
             'current_date': date.today(),
-            'current_date': date.today(),
             'current_datetime': datetime.now(),
             'active_announcement': Announcement.query.filter_by(is_active=True).first()
         }
@@ -124,3 +123,9 @@ def create_app(config_name='development'):
                 db.session.rollback()
     
     return app
+
+# Create the application instance for Gunicorn
+app = create_app(os.getenv('FLASK_CONFIG') or 'default')
+
+if __name__ == '__main__':
+    app.run()
